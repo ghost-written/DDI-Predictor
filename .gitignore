@@ -8,4 +8,8 @@ results/hfcs_analysis/
 results/cnn_regression/
 results/xgboost_regression/
 results/ddi_study/ddi.db
+results/ddi_study/phase1_signals.csv
+results/ddi_study/phase1_signals_named.csv
+results/ddi_study/*.parquet
 explorer/__pycache__/
+explorer/pages/__pycache__/

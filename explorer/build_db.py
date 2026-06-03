@@ -24,6 +24,10 @@ DATA_DIR = ROOT / "data"
 DB_PATH = RESULTS_DIR / "ddi.db"
 
 SIGNALS_CSV = RESULTS_DIR / "phase1_signals.csv"
+SIGNALS_PARQUET_CANDIDATES = [
+    RESULTS_DIR / "phase1_signals.zstd.parquet",
+    RESULTS_DIR / "phase1_signals.parquet",
+]
 LABELED_CSV = RESULTS_DIR / "phase1_labeled_pairs.csv"
 MATCH_CSV = RESULTS_DIR / "phase2_match_details.csv"
 METRICS_CSV = RESULTS_DIR / "phase3_metrics.csv"
@@ -56,10 +60,14 @@ def stream_csv(path: Path):
     return f, header, reader
 
 
-def load_signals(con: sqlite3.Connection) -> int:
-    if not SIGNALS_CSV.exists():
-        log(f"SKIP signals: {SIGNALS_CSV} not found")
-        return 0
+def _signals_parquet() -> Path | None:
+    for p in SIGNALS_PARQUET_CANDIDATES:
+        if p.exists():
+            return p
+    return None
+
+
+def _create_signals_table(con: sqlite3.Connection) -> None:
     con.execute("DROP TABLE IF EXISTS signals")
     con.execute(
         """CREATE TABLE signals (
@@ -68,6 +76,28 @@ def load_signals(con: sqlite3.Connection) -> int:
             ror REAL, ci_low REAL, ci_high REAL
         )"""
     )
+
+
+def _load_signals_parquet(con: sqlite3.Connection, path: Path) -> int:
+    import pyarrow.parquet as pq
+
+    cols = ["drug_a", "drug_b", "reaction", "a", "b", "c", "d", "ror", "ci_low", "ci_high"]
+    ins = "INSERT INTO signals VALUES (?,?,?,?,?,?,?,?,?,?)"
+    pf = pq.ParquetFile(path)
+    total, t0 = 0, time.time()
+    for batch in pf.iter_batches(batch_size=BATCH, columns=cols):
+        d = batch.to_pydict()
+        rows = list(zip(*(d[c] for c in cols)))
+        con.executemany(ins, rows)
+        total += len(rows)
+        if total % 1_000_000 < BATCH:
+            log(f"  signals loaded: {total:,} ({time.time() - t0:.0f}s)")
+    con.commit()
+    log(f"signals: {total:,} rows from parquet in {time.time() - t0:.0f}s; indexing...")
+    return total
+
+
+def _load_signals_csv(con: sqlite3.Connection) -> int:
     f, header, reader = stream_csv(SIGNALS_CSV)
     log(f"signals header: {header}")
     ins = "INSERT INTO signals VALUES (?,?,?,?,?,?,?,?,?,?)"
@@ -91,7 +121,23 @@ def load_signals(con: sqlite3.Connection) -> int:
     finally:
         f.close()
     con.commit()
-    log(f"signals: {total:,} rows loaded in {time.time() - t0:.0f}s; indexing...")
+    log(f"signals: {total:,} rows from csv in {time.time() - t0:.0f}s; indexing...")
+    return total
+
+
+def load_signals(con: sqlite3.Connection) -> int:
+    parquet = _signals_parquet()
+    if parquet is None and not SIGNALS_CSV.exists():
+        log("SKIP signals: no parquet or CSV found.")
+        log(f"  Run: python {Path(__file__).parent.name}/fetch_data.py")
+        return 0
+    _create_signals_table(con)
+    if parquet is not None:
+        log(f"loading signals from {parquet.name}")
+        total = _load_signals_parquet(con, parquet)
+    else:
+        log(f"loading signals from {SIGNALS_CSV.name}")
+        total = _load_signals_csv(con)
     con.execute("CREATE INDEX idx_sig_a ON signals(drug_a)")
     con.execute("CREATE INDEX idx_sig_b ON signals(drug_b)")
     con.execute("CREATE INDEX idx_sig_rxn ON signals(reaction)")
