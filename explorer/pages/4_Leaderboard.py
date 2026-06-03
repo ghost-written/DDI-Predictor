@@ -32,8 +32,8 @@ with st.sidebar:
     limit = st.select_slider("Rows", options=[100, 500, 1000, 5000, 10000], value=1000)
 
 st.markdown(
-    "**Why two rankings?** Absolute ROR rewards rare events (tiny `a`,`c`). Ranking by "
-    "the **CI lower bound** demotes those low-evidence."
+    "**Why multiple options?** Absolute ROR rewards rare events (tiny `a`,`c`). Ranking by "
+    "the **CI lower bound** demotes those with low evidence."
 )
 
 df = D.leaderboard(order_by=order_by, min_a=min_a, min_ci_low=min_ci,
@@ -44,11 +44,10 @@ if df.empty:
     st.stop()
 
 view = df.copy()
-view.insert(0, "rank", range(1, len(view) + 1))
 view["pair"] = view["drug_a_name"].fillna(view["drug_a"]) + " + " + \
     view["drug_b_name"].fillna(view["drug_b"])
 view["ror"] = view["ror"].round(2)
-cols = ["rank", "pair", "reaction", "a", "b", "c", "d", "ror", "ci_low", "ci_high",
+cols = ["pair", "reaction", "a", "b", "c", "d", "ror", "ci_low", "ci_high",
         "drug_a", "drug_b"]
 st.dataframe(view[cols], width='stretch', hide_index=True, height=620)
 ui.download_df(view[cols], "leaderboard.csv", "Download filtered leaderboard (CSV)")
