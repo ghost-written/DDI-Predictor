@@ -47,8 +47,22 @@ with tab1:
                "swamped by the millions of minimum-evidence points.")
 
 with tab2:
-    fig2 = px.histogram(df, x="ror", log_x=True, nbins=60,
-                        labels={"ror": "ROR (log scale)"})
+    # Histogram in log space (binning ROR linearly over a 2..22M range collapses
+    # almost everything into one bar), then relabel ticks with real ROR values.
+    fig2 = px.histogram(df, x="log_ror", nbins=60, labels={"log_ror": "ROR (log scale)"})
+    lo = int(np.floor(df["log_ror"].min()))
+    hi = int(np.ceil(df["log_ror"].max()))
+    tickvals = list(range(lo, hi + 1))
+
+    def _fmt(v: int) -> str:
+        val = 10 ** v
+        if val >= 1e6:
+            return f"{val/1e6:g}M"
+        if val >= 1e3:
+            return f"{val/1e3:g}k"
+        return f"{val:g}"
+
+    fig2.update_xaxes(tickvals=tickvals, ticktext=[_fmt(v) for v in tickvals])
     fig2.update_layout(height=520, margin=dict(l=10, r=10, t=10, b=10),
                        yaxis_title="signals (sampled)")
     st.plotly_chart(fig2, width='stretch')
