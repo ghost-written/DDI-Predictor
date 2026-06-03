@@ -1,6 +1,11 @@
 data/amazon_dsld_merged.csv
 data/drugbank_all_drug_drug_interactions.csv
 data/faers_full.parquet
+# DrugBank source files are license-restricted and must NOT be committed.
+# Users must supply their own from their DrugBank account.
+data/drugbank_all_full_database.xml.zip
+data/drugbank_all_structures.sdf.zip
+data/drugbank_all_drugbank_vocabulary.csv.zip
 .DS_Store
 previous_works/
 results/eda_hfcs/

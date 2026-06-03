@@ -78,6 +78,22 @@ It opens at `http://localhost:8501`. (Use `python -m streamlit` because the
 - **Fingerprints** (`phase2_fingerprints.npz`) and **model** (`best_model.pt`): required
   for the Similarity page (Tanimoto + live scoring). The rest of the app works without them.
 
+## DrugBank source files (not included)
+
+DrugBank's database is **license-restricted and is not distributed with this repo**.
+Anyone who wants to **re-run the upstream pipeline** (`ddi_study.py`,
+`extract_drugbank_ddi.py`) must obtain their own copy from their
+[DrugBank account](https://go.drugbank.com/) and place these files under `data/`:
+
+| File | Used by |
+|------|---------|
+| `data/drugbank_all_full_database.xml.zip` | `extract_drugbank_ddi.py` (known-DDI list) |
+| `data/drugbank_all_drugbank_vocabulary.csv.zip` | `ddi_study.py` (name canonicalization) |
+| `data/drugbank_all_structures.sdf.zip` | `ddi_study.py` (SMILES → fingerprints) |
+
+These are git-ignored. The **explorer itself does not need them** — it runs from the
+pre-computed result artifacts (and the signals Parquet from the release).
+
 ## Publishing / updating the signals data (maintainer)
 
 The signals Parquet is distributed as a **GitHub Release asset** (free, up to 2 GB

@@ -1,3 +1,2 @@
 *.sh text eol=lf
 *.py text eol=lf
-data/drugbank_all_full_database.xml.zip filter=lfs diff=lfs merge=lfs -text
