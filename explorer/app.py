@@ -69,6 +69,38 @@ with right:
             st.image(str(D.IMG["precision_at_k"]), width='stretch')
 
 st.divider()
+st.subheader("Glossary")
+g1, g2 = st.columns(2)
+with g1:
+    st.markdown(
+        """
+**DDI — Drug–Drug Interaction**
+When one drug changes the effect of another taken alongside it — altering its
+potency, clearance, or side-effect profile. These are what this project tries to
+detect and predict.
+
+**FAERS — FDA Adverse Event Reporting System**
+The U.S. Food & Drug Administration's voluntary post-market database of adverse-event
+reports submitted by clinicians, patients, and manufacturers. It is the raw evidence
+behind the signals here: which drugs and reactions get reported together.
+        """
+    )
+with g2:
+    st.markdown(
+        r"""
+**ROR — Reporting Odds Ratio**
+A measure of how much more often a drug pair and a reaction are
+reported *together* than expected, from a 2×2 table of report counts:
+$\mathrm{ROR} = (a \cdot d) / (b \cdot c)$. (`a` = both present, `b`/`c` = one present, `d` = neither.)
+
+**ECFP4 — Extended-Connectivity Fingerprint (radius 2)**
+A 1,024-bit "barcode" of a molecule's structure: each bit marks the presence of a
+particular local atom-and-bond pattern. The model reads only these fingerprints —
+not drug names — so it can generalize to pairs never seen together.
+        """
+    )
+
+st.divider()
 status = []
 status.append(("Known DrugBank DDIs", "loaded ✓" if D.known_ddi_available() else "not loaded"))
 status.append(("Fingerprints", "loaded ✓" if D.fp_available() else "missing"))
